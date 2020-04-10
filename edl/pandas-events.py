@@ -23,12 +23,19 @@ valid_frame_rates = [
 
 @register_extension_dtype
 class PandasTimecode(ExtensionDtype):
+    kind: str_type ='O'
     name = 'timecode'
     type: Type[Timecode] = Timecode
     _frame_rate = '25'
 
     def __init__(self, timecode: Timecode):
         self._timecode = timecode
+
+    def __str__(self) -> str_type:
+        return self.name
+
+    def __repr__(self) -> str_type:
+        return str(self)
 
     @property
     def timecode(self) -> Timecode:
@@ -75,16 +82,22 @@ if __name__ == '__main__':
     with open(edl_path) as f:
         edl = parser.parse(f)
 
-    e1 = edl.events[0]
-    e2 = edl.events[1]
+    df = pd.DataFrame({
+        'num': pd.Series([], dtype=str_type),
+        'reel': pd.Series([], dtype=str_type),
+        'track': pd.Series([], dtype=str_type),
+        'rec_start_tc': pd.Series([], dtype=PandasTimecode),
+        'rec_end_tc': pd.Series([], dtype=PandasTimecode),
+    })
 
-    e = [[e1.num, e1.reel, e1.track, e1.rec_start_tc, e1.rec_end_tc]]
-    columns = ['num', 'reel', 'track', ['rec_start_tc'], ['rec_end_tc ']]
-    dtypes = {
-        'num': str_type,
-        'reel': str_type,
-        'track': str_type,
-        'rec_start_tc': PandasTimecode,
-        'rec_end_tc': PandasTimecode,
-    }
-    df = pd.DataFrame(data=e, columns=columns, dtype=dtypes)
+    for event in edl.events:
+        row = [
+            event.num,
+            event.reel,
+            event.track,
+            event.rec_start_tc,
+            event.rec_end_tc
+        ]
+        df.loc[len(df)] = row
+    print(df)
+    print(df.rec_start_tc + 10)
